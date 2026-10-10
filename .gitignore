@@ -1,0 +1,31 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Secret and credential files
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials.json
+
+# Local configuration overrides
+*.local
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor and workspace settings
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
