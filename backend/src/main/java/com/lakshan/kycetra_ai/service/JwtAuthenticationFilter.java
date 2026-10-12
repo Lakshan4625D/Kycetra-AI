@@ -50,9 +50,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Claims claims = jwtService.extractClaims(token);
             String username = claims.getSubject();
 
-            if (username != null
-                    && SecurityContextHolder.getContext()
-                            .getAuthentication() == null) {
+            if (username == null || username.isBlank()) {
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 userRepository.findWithRolesByUsername(username)
                         .filter(User::isEnabled)
