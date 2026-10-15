@@ -151,4 +151,23 @@ public class DocumentStorageService {
             long fileSizeBytes
     ) {
     }
+    
+    public Path getStoredFilePath(String storageKey) throws IOException {
+        if (storageKey == null || storageKey.isBlank()) {
+            throw new IllegalArgumentException("Invalid storage key.");
+        }
+
+        Path file = storageDirectory.resolve(storageKey).normalize();
+
+        if (!file.startsWith(storageDirectory)) {
+            throw new IllegalArgumentException("Invalid storage key.");
+        }
+
+        if (!Files.isRegularFile(file)) {
+            throw new IOException("Stored document file was not found.");
+        }
+
+        return file;
+    }
+
 }
