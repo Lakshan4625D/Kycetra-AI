@@ -29,3 +29,6 @@ Desktop.ini
 # Temporary files
 *.tmp
 *.bak
+
+# Database backups
+*backup.sql

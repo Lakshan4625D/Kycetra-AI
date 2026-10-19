@@ -6,6 +6,11 @@ kyc:
   storage:
     directory: ${KYC_STORAGE_DIR:./uploads/kyc}
 
+kycetra:
+  chunking:
+    chunk-size: 1000
+    chunk-overlap: 150
+
 spring:
   config:
     import: optional:file:../.env[.properties]
@@ -37,6 +42,12 @@ spring:
         api-key: ${GEMINI_API_KEY:}
         chat:
           model: gemini-3.5-flash-lite
+        embedding:
+          api-key: ${GEMINI_API_KEY:}
+          text:
+            model: gemini-embedding-001
+            task-type: RETRIEVAL_DOCUMENT
+            dimensions: 768
 
   servlet:
     multipart:
