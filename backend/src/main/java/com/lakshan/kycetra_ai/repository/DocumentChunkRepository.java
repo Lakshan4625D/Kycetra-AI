@@ -1,7 +1,11 @@
+
 package com.lakshan.kycetra_ai.repository;
 
 import com.lakshan.kycetra_ai.entity.DocumentChunk;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -14,4 +18,15 @@ public interface DocumentChunkRepository
         );
 
     void deleteAllByExtractedDocument_Id(Long extractedDocumentId);
+
+    @Modifying
+    @Query(value = """
+        UPDATE document_chunks
+        SET embedding = CAST(:embedding AS vector)
+        WHERE id = :chunkId
+        """, nativeQuery = true)
+    int updateEmbedding(
+        @Param("chunkId") Long chunkId,
+        @Param("embedding") String embedding
+    );
 }
