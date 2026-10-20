@@ -21,25 +21,30 @@ public class KycDocumentProcessingService {
     private final UserRepository userRepository;
     private final DocumentStorageService storageService;
     private final PdfTextExtractionService extractionService;
+    private final DocumentChunkingService chunkingService;
+    private final ChunkEmbeddingService embeddingService;
 
     public KycDocumentProcessingService(
             KycDocumentRepository documentRepository,
             ExtractedDocumentRepository extractedDocumentRepository,
             UserRepository userRepository,
             DocumentStorageService storageService,
-            PdfTextExtractionService extractionService
-    ) {
+            PdfTextExtractionService extractionService,
+            DocumentChunkingService chunkingService,
+            ChunkEmbeddingService embeddingService) {
+
         this.documentRepository = documentRepository;
         this.extractedDocumentRepository = extractedDocumentRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
         this.extractionService = extractionService;
+        this.chunkingService = chunkingService;
+        this.embeddingService = embeddingService;
     }
 
     public ExtractedDocument processDocument(
             String username,
-            Long documentId
-    ) throws IOException {
+            Long documentId) throws IOException {
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
@@ -57,15 +62,17 @@ public class KycDocumentProcessingService {
         }
 
         document.setStatus(DocumentStatus.PROCESSING);
+        document.setFailureReason(null);
         documentRepository.saveAndFlush(document);
 
         try {
+            // Stage 1: Extract text from the stored PDF.
             Path pdfPath = storageService.getStoredFilePath(
-                    document.getStorageKey()
-            );
+                    document.getStorageKey());
 
             String extractedText = extractionService.extractText(pdfPath);
 
+            // Stage 2: Save or update the extracted text.
             ExtractedDocument extractedDocument =
                     extractedDocumentRepository
                             .findByDocument_Id(document.getId())
@@ -77,6 +84,13 @@ public class KycDocumentProcessingService {
             ExtractedDocument saved =
                     extractedDocumentRepository.save(extractedDocument);
 
+            // Stage 3: Create fresh chunks.
+            chunkingService.chunkDocument(saved.getId());
+
+            // Stage 4: Generate and store an embedding for every chunk.
+            embeddingService.generateAndStoreEmbeddings(saved.getId());
+
+            // Only mark completed after all stages succeed.
             document.setStatus(DocumentStatus.COMPLETED);
             document.setFailureReason(null);
             documentRepository.save(document);
@@ -87,11 +101,24 @@ public class KycDocumentProcessingService {
             document.setStatus(DocumentStatus.FAILED);
             document.setFailureReason(
                     "Document processing failed: "
-                            + exception.getMessage()
-            );
+                            + safeFailureMessage(exception));
+
             documentRepository.save(document);
 
             throw exception;
         }
+    }
+
+    private String safeFailureMessage(Exception exception) {
+        String message = exception.getMessage();
+
+        if (message == null || message.isBlank()) {
+            return exception.getClass().getSimpleName();
+        }
+
+        // Avoid storing excessively long exception messages.
+        return message.length() > 1000
+                ? message.substring(0, 1000)
+                : message;
     }
 }

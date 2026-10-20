@@ -1,8 +1,8 @@
-
 package com.lakshan.kycetra_ai.controller;
 
 import com.lakshan.kycetra_ai.dto.DocumentUploadResponse;
 import com.lakshan.kycetra_ai.entity.DocumentStatus;
+import com.lakshan.kycetra_ai.service.KycDocumentProcessingService;
 import com.lakshan.kycetra_ai.service.KycDocumentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +17,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -31,6 +33,9 @@ class KycDocumentControllerTest {
     @MockitoBean
     private KycDocumentService documentService;
 
+    @MockitoBean
+    private KycDocumentProcessingService processingService;
+
     private DocumentUploadResponse sampleDocument() {
         return new DocumentUploadResponse(
                 1L,
@@ -38,6 +43,17 @@ class KycDocumentControllerTest {
                 "application/pdf",
                 1024L,
                 DocumentStatus.UPLOADED,
+                OffsetDateTime.parse("2026-10-14T10:00:00Z")
+        );
+    }
+
+    private DocumentUploadResponse completedDocument() {
+        return new DocumentUploadResponse(
+                1L,
+                "passport.pdf",
+                "application/pdf",
+                1024L,
+                DocumentStatus.COMPLETED,
                 OffsetDateTime.parse("2026-10-14T10:00:00Z")
         );
     }
@@ -55,14 +71,22 @@ class KycDocumentControllerTest {
         when(documentService.upload(eq("lakshan_test"), any()))
                 .thenReturn(sampleDocument());
 
+        when(processingService.processDocument("lakshan_test", 1L))
+                .thenReturn(null);
+
+        when(documentService.getMyDocument("lakshan_test", 1L))
+                .thenReturn(completedDocument());
+
         mockMvc.perform(multipart("/api/documents/upload")
                         .file(file))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.filename").value("passport.pdf"))
-                .andExpect(jsonPath("$.status").value("UPLOADED"));
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
 
         verify(documentService).upload(eq("lakshan_test"), any());
+        verify(processingService).processDocument("lakshan_test", 1L);
+        verify(documentService).getMyDocument("lakshan_test", 1L);
     }
 
     @Test

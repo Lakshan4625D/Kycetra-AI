@@ -117,7 +117,13 @@ class KycDocumentProcessingServiceIntegrationTest {
                 .orElseThrow();
 
         assertEquals(DocumentStatus.COMPLETED, updated.getStatus());
-        assertEquals(1L, extractedDocumentRepository.count());
+        assertEquals(
+                1L,
+                extractedDocumentRepository
+                        .findByDocument_Id(pdfDocument.getId())
+                        .stream()
+                        .count()
+        );
     }
 
     @Test
@@ -195,6 +201,12 @@ class KycDocumentProcessingServiceIntegrationTest {
         );
 
         assertEquals("Updated extracted text", result.getExtractedText());
-        assertEquals(1L, extractedDocumentRepository.count());
+        assertEquals(
+                1L,
+                extractedDocumentRepository
+                        .findByDocument_Id(pdfDocument.getId())
+                        .stream()
+                        .count()
+        );
     }
 }

@@ -2,10 +2,12 @@
 package com.lakshan.kycetra_ai.repository;
 
 import com.lakshan.kycetra_ai.entity.DocumentChunk;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,6 +21,7 @@ public interface DocumentChunkRepository
 
     void deleteAllByExtractedDocument_Id(Long extractedDocumentId);
 
+    @Transactional
     @Modifying
     @Query(value = """
         UPDATE document_chunks
